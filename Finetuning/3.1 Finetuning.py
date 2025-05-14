@@ -6,21 +6,32 @@ from transformers import Trainer
 import numpy as np
 import torch
 
-
+# choose GPU
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
+# load dataset
 raw_datasets = load_dataset("glue", "mrpc")
-checkpoint = "bert-base-uncased"
+
+# choose model
+checkpoint = "ner-english-large"
 tokenizer = AutoTokenizer.from_pretrained(checkpoint)
 
-
+# function for tokanizing every sentence
 def tokenize_function(example):
     return tokenizer(example["sentence1"], example["sentence2"], truncation=True)
 
-
+# tokanize all dataset
+# map function: 
+# The results of the function are cached, so it won't take any time if we re-execute the code
+# It can apply multiprocessing to go faster than applying the function on each element of the dataset
+# It does not load the whole dataset into memory, saving the results as soon as one element is processed.
 tokenized_datasets = raw_datasets.map(tokenize_function, batched=True)
+
+# data_collator puts together all the samples in a batch.
+# dynamic padding (to the lenght of the maximum sentance in the batch)
 data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
 
+#  it contains all the hyperparameters used for training and evaluation with the Trainer.
 training_args = TrainingArguments("test-trainer")
 
 model = AutoModelForSequenceClassification.from_pretrained(checkpoint, num_labels=2)
